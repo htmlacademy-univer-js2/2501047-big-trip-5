@@ -1,11 +1,11 @@
 export default class PointView {
-    constructor() {
-      this.element = this.createElement();
-    }
-  
-    createElement() {
-      const point = document.createElement('div');
-      point.innerHTML = `
+  constructor() {
+    this.element = this.createElement();
+  }
+
+  createElement() {
+    const point = document.createElement('div');
+    point.innerHTML = `
         <div class="event">
           <div class="event__type">
             <img class="event__type-icon" src="img/icons/taxi.png" alt="Event type icon" width="42" height="42">
@@ -34,10 +34,10 @@ export default class PointView {
           </button>
         </div>
       `;
-      return point;
-    }
-  
-    getElement() {
-      return this.element;
-    }
+    return point;
   }
+
+  getElement() {
+    return this.element;
+  }
+}

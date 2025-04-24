@@ -1,11 +1,11 @@
 export default class FiltersView {
-    constructor() {
-      this.element = this.createElement();
-    }
-  
-    createElement() {
-      const filters = document.createElement('div');
-      filters.innerHTML = `
+  constructor() {
+    this.element = this.createElement();
+  }
+
+  createElement() {
+    const filters = document.createElement('div');
+    filters.innerHTML = `
         <form class="trip-filters" action="#" method="get">
           <div class="trip-filters__filter">
             <input id="filter-everything" class="trip-filters__filter-input  visually-hidden" type="radio" name="trip-filter" value="everything" checked>
@@ -22,10 +22,10 @@ export default class FiltersView {
           <button class="visually-hidden" type="submit">Accept filter</button>
         </form>
       `;
-      return filters;
-    }
-  
-    getElement() {
-      return this.element;
-    }
+    return filters;
   }
+
+  getElement() {
+    return this.element;
+  }
+}
