@@ -4,7 +4,6 @@
   "private": true,
   "description": "Проект «Большое путешествие» от HTML Academy",
   "scripts": {
-    "lint": "npx eslint src/",
     "build": "webpack --mode production",
     "start": "webpack serve --mode development --open"
   },
@@ -13,7 +12,7 @@
     "@babel/preset-env": "^7.26.9",
     "babel-loader": "^10.0.0",
     "copy-webpack-plugin": "^11.0.0",
-    "eslint": "8.38.0",
+    "eslint": "^8.38.0",
     "eslint-config-htmlacademy": "9.0.0",
     "html-webpack-plugin": "^5.6.3",
     "webpack": "^5.89.0",
