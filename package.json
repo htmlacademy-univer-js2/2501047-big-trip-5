@@ -26,5 +26,8 @@
     "last 2 versions",
     "> 1%",
     "not dead"
-  ]
+  ],
+  "dependencies": {
+    "dayjs": "^1.11.13"
+  }
 }
