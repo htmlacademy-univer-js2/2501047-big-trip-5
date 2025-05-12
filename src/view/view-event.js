@@ -1,4 +1,5 @@
-import {createElement} from '../render.js';
+import { extend } from 'dayjs';
+import AbstractView from '../framework/view/abstract-view.js';
 import {
   humanizeEventDueDate,
   humanizeEventTime,
@@ -6,6 +7,7 @@ import {
 } from "../utils.js";
 
 function createViewEvent(point) {
+  // console.log(point)
   const {
     type,
     destination,
@@ -15,6 +17,7 @@ function createViewEvent(point) {
     offersHtml,
     favorite,
   } = point;
+  console.log(type, destination)
  
   const date = humanizeEventDueDate(dateFrom);
   const timeStart = humanizeEventTime(dateFrom);
@@ -48,7 +51,7 @@ function createViewEvent(point) {
                     <path d="M14 21l-8.22899 4.3262 1.57159-9.1631L.685209 9.67376 9.8855 8.33688 14 0l4.1145 8.33688 9.2003 1.33688-6.6574 6.48934 1.5716 9.1631L14 21z"/>
                   </svg>
                 </button>
-                <button class="event__rollup-btn" type="button">
+                <button class="event__rollup-btn card__btn--edit" type="button">
                   <span class="visually-hidden">Open event</span>
                 </button>
               </div>
@@ -56,19 +59,25 @@ function createViewEvent(point) {
   `;
 }
 
-export default class ViewEvent {
-  constructor({ point }) {
-    this.point = point;
+export default class ViewEvent extends AbstractView {
+  #point = null;
+  #handleEditClick = null;
+
+  constructor({ point, onEditClick }) {
+    super();
+    this.#point = point;
+    this.#handleEditClick = onEditClick;
+
+    this.element.querySelector('.card__btn--edit')
+      .addEventListener('click', this.#editClickHandler);
   }
   
-  getTemplate() {
-    return createViewEvent(this.point);
+  get template() {
+    return createViewEvent(this.#point);
   }
 
-  getElement() {
-    if (!this.element) {
-      this.element = createElement(this.getTemplate());
-    }
-    return this.element;
-  }
+  #editClickHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleEditClick();
+  };
 }

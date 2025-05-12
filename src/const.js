@@ -46,6 +46,6 @@ const TYPE = [
     }
 ];
 
-const EVENT_COUNT = 5;
+const EVENT_COUNT = 25;
 
 export { TYPE, EVENT_COUNT };

@@ -4,27 +4,30 @@ import DestinationModel from "./destination-model.js";
 import { EVENT_COUNT } from "../const.js";
  
 export default class PointModel {
-  rezult = {};
+  #offersModel = null;
+  #destinationModel = null;
+  #points = null;
+
   constructor() {
-    this.offersModel = new OffersModel();
-    this.destinationModel = new DestinationModel();
-    this.points = Array.from({ length: EVENT_COUNT }, () => this.createPoint());
+    this.#offersModel = new OffersModel();
+    this.#destinationModel = new DestinationModel();
+    this.#points = Array.from({ length: EVENT_COUNT }, () => this.#createPoint());
   }
  
-  createPoint() {
+  #createPoint() {
     const tempPoint = getRandomPoint();
-    const destination = this.destinationModel.getDestinationById(
+    const destination = this.#destinationModel.getDestinationById(
       tempPoint.destination
     );
-    const allOffersForType = this.offersModel.getOffersByType(tempPoint.type);
+    const allOffersForType = this.#offersModel.getOffersByType(tempPoint.type);
     const offers = (allOffersForType ?? []).filter((offer) =>
       tempPoint.offers.includes(offer.id)
     );
  
     // Генерация HTML для выбранных офферов
-    const offersHtml = this.createOffersHtml(offers);
-    const offersEditHtml = this.createOffersTemplate(allOffersForType, offers);
-    const photosTemplate = this.createPhotosTemplate(destination);
+    const offersHtml = this.#createOffersHtml(offers);
+    const offersEditHtml = this.#createOffersTemplate(allOffersForType, offers);
+    const photosTemplate = this.#createPhotosTemplate(destination);
  
     return {
       ...tempPoint,
@@ -37,7 +40,7 @@ export default class PointModel {
     };
   }
  
-  createOffersHtml(offers) {
+  #createOffersHtml(offers) {
     if (!offers || offers.length === 0) return "";
  
     return `
@@ -57,7 +60,7 @@ export default class PointModel {
   `;
   }
  
-createOffersTemplate(allOffersForType, selectedOffers) {
+#createOffersTemplate(allOffersForType, selectedOffers) {
     const selectedOfferIds = selectedOffers.map((offer) => offer.id); // ← ВАЖНО
  
     return `
@@ -90,7 +93,7 @@ createOffersTemplate(allOffersForType, selectedOffers) {
   `;
   }
 
-  createPhotosTemplate(destination) {
+  #createPhotosTemplate(destination) {
     const photosHtml = destination.pictures
       .map((picture) => {
         return `<img class="event__photo" src="${picture.src}" alt="${picture.description}">`;
@@ -105,8 +108,8 @@ createOffersTemplate(allOffersForType, selectedOffers) {
 </div>`.trim();
   }
 
-  getPoints() {
-    return this.points;
+  get points() {
+    return this.#points;
   }
 }
 

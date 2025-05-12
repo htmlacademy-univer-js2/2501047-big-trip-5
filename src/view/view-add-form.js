@@ -1,4 +1,4 @@
-import {createElement} from '../render.js';
+import AbstractView from '../framework/view/abstract-view.js';
 import { humanizeEventDueDate, humanizeEventDueDateEdit } from '../utils.js';
 
 function createViewAddForm(point) {
@@ -126,19 +126,14 @@ function createViewAddForm(point) {
   `;
 }
 
-export default class ViewAddForm {
+export default class ViewAddForm extends AbstractView{
+  #point = null;
   constructor({ point }) {
-    this.point = point;
+    super()
+    this.#point = point;
   }
 
-  getTemplate() {
-    return createViewAddForm(this.point);
-  }
-
-  getElement() {
-    if (!this.element) {
-      this.element = createElement(this.getTemplate());
-    }
-    return this.element;
+  get template() {
+    return createViewAddForm(this.#point);
   }
 }
