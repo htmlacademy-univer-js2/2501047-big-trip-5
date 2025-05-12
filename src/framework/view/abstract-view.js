@@ -1,20 +1,25 @@
 import {createElement} from '../render.js';
 import './abstract-view.css';
+
 /** @const {string} Класс, реализующий эффект "покачивания головой" */
 const SHAKE_CLASS_NAME = 'shake';
+
 /** @const {number} Время анимации в миллисекундах */
 const SHAKE_ANIMATION_TIMEOUT = 600;
+
 /**
  * Абстрактный класс представления
  */
 export default class AbstractView {
   /** @type {HTMLElement|null} Элемент представления */
   #element = null;
+
   constructor() {
     if (new.target === AbstractView) {
       throw new Error('Can\'t instantiate AbstractView, only concrete one.');
     }
   }
+
   /**
    * Геттер для получения элемента
    * @returns {HTMLElement} Элемент представления
@@ -23,8 +28,10 @@ export default class AbstractView {
     if (!this.#element) {
       this.#element = createElement(this.template);
     }
+
     return this.#element;
   }
+
   /**
    * Геттер для получения разметки элемента
    * @abstract
@@ -33,10 +40,12 @@ export default class AbstractView {
   get template() {
     throw new Error('Abstract method not implemented: get template');
   }
+
   /** Метод для удаления элемента */
   removeElement() {
     this.#element = null;
   }
+
   /**
    * Метод, реализующий эффект "покачивания головой"
    * @param {shakeCallback} [callback] Функция, которая будет вызвана после завершения анимации
@@ -49,6 +58,7 @@ export default class AbstractView {
     }, SHAKE_ANIMATION_TIMEOUT);
   }
 }
+
 /**
  * Функция, которая будет вызвана методом shake после завершения анимации
  * @callback shakeCallback
