@@ -1,5 +1,5 @@
+import {render} from './framework/render.js';
 import ViewFilter from './view/view-filter.js';
-import {render} from './render.js';
 import BoardPresenter from './presenter/board-presenter.js';
 import PointModel from './model/point-model.js';
 import DestinationModel from './model/destination-model.js';

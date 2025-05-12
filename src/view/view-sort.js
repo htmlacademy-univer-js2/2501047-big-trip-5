@@ -1,4 +1,4 @@
-import {createElement} from '../render.js';
+import AbstractView from '../framework/view/abstract-view.js';
 
 function createViewSortTemplate() {
   return `
@@ -31,15 +31,8 @@ function createViewSortTemplate() {
   `;
 }
 
-export default class ViewSort {
-  getTemplate() {
+export default class ViewSort extends AbstractView {
+  get template() {
     return createViewSortTemplate();
-  }
-
-  getElement() {
-    if (!this.element) {
-      this.element = createElement(this.getTemplate());
-    }
-    return this.element;
   }
 }

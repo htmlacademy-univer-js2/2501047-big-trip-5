@@ -1,5 +1,16 @@
-import {createElement} from '../render.js';
+import AbstractView from '../framework/view/abstract-view.js';
 import { humanizeEventDueDate, humanizeEventDueDateEdit } from '../utils.js';
+
+const BLANK_POINT = {
+  id: null,
+  basePrice: 0,
+  dateFrom: null,
+  dateTo: null,
+  destination: null,
+  isFavorite: false,
+  offers: [],
+  type: null,
+};
 
 function createViewEditFormTemplate(point) {
   const {
@@ -16,6 +27,7 @@ function createViewEditFormTemplate(point) {
 
 
   return `
+    <li>
     <form class="event event--edit" action="#" method="post">
       <header class="event__header">
         <div class="event__type-wrapper">
@@ -107,7 +119,7 @@ function createViewEditFormTemplate(point) {
 
         <button class="event__save-btn  btn  btn--blue" type="submit">Save</button>
         <button class="event__reset-btn" type="reset">Delete</button>
-        <button class="event__rollup-btn" type="button">
+        <button class="event__rollup-btn card__btn--edit" type="button">
           <span class="visually-hidden">Open event</span>
         </button>
       </header>
@@ -124,24 +136,42 @@ function createViewEditFormTemplate(point) {
         </section>
       </section>
     </form>
+    </li>
   `;
 }
 
-export default class ViewEditForm {
-  constructor({ point }) {
-    this.point = point;
-    console.log('ViewEditForm initialized with point:', point);
-  }
+export default class TaskEditView extends AbstractView {
+  #point = null;
+  #handleFormSubmit = null;
+  #handleEditClick = null;
 
-  getTemplate() {
-    return createViewEditFormTemplate(this.point);
-  }
 
-  getElement() {
-    if (!this.element) {
-      this.element = createElement(this.getTemplate());
-      console.log('Element created:', this.element);
+  constructor({point = BLANK_POINT, onFormSubmit, onEditClick}) {
+    super();
+    this.#point = point;
+    this.#handleFormSubmit = onFormSubmit;
+    this.#handleEditClick = onEditClick;
+
+    this.element
+    .querySelector("form")
+    .addEventListener("submit", this.#formSubmitHandler);
+
+  this.element
+    .querySelector(".card__btn--edit")
+    .addEventListener("click", this.#editClickHandler);
     }
-    return this.element;
+
+  get template() {
+    return createViewEditFormTemplate(this.#point);
   }
+
+  #formSubmitHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleFormSubmit();
+  };
+
+  #editClickHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleEditClick();
+  };
 }
