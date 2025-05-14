@@ -3,6 +3,7 @@ import ViewAddForm from '../view/view-add-form.js';
 import ViewEvent from '../view/view-event.js';
 import TaskEditView from '../view/view-edit-form.js';
 import LoadMoreButtonView from '../view/load-more-button-view.js';
+import NoPointView from '../view/no-point-view.js';
 
 import ViewBoard from '../view/view-board.js';
 import ViewEventList from '../view/view-event-list.js';
@@ -30,30 +31,7 @@ export default class BoardPresenter {
 
   init() {
     this.#boardPoints = structuredClone(this.#pointModel.points);    
-    render(this.#boardComponent, this.#boardContainer);
-    render(new ViewSort(), this.#boardComponent.element);
-    // render(
-    //   new ViewAddForm({point:this.boardPoints[0]}), 
-    //   this.#boardComponent.element
-    // );
-
-
-    render(this.#eventListComponent, this.#boardComponent.element);
-    // render(
-    //   new ViewEditForm({point:this.boardPoints[1]}), 
-    //   this.#eventListComponent.element
-    // );
-
-    for (let i = 0; i < Math.min(this.#boardPoints.length, POINT_COUNT_PER_STEP); i++) {
-      this.#renderPoint({point:this.#boardPoints[i]})
-    }
-
-    if (this.#boardPoints.length > POINT_COUNT_PER_STEP) {
-      this.#loadMoreButtonComponent = new LoadMoreButtonView({
-        onClick: this.#handleLoadMoreButtonClick
-      });
-      render(this.#loadMoreButtonComponent, this.#boardComponent.element);
-    }
+    this.#renderBoard();
   }
   #renderPoint({point}) {
     const escKeyDownHandler = (evt) => {
@@ -104,4 +82,28 @@ export default class BoardPresenter {
       remove(this.#loadMoreButtonComponent);
     }
   };
+  #renderBoard(){
+    render(this.#boardComponent, this.#boardContainer);
+
+    if (this.#boardPoints.every((point) => point.isArchive)) {
+      render(new NoPointView(), this.#boardComponent.element);
+      return;
+    }
+
+    render(new ViewSort(), this.#boardComponent.element);
+
+
+    render(this.#eventListComponent, this.#boardComponent.element);
+
+    for (let i = 0; i < Math.min(this.#boardPoints.length, POINT_COUNT_PER_STEP); i++) {
+      this.#renderPoint({point:this.#boardPoints[i]})
+    }
+
+    if (this.#boardPoints.length > POINT_COUNT_PER_STEP) {
+      this.#loadMoreButtonComponent = new LoadMoreButtonView({
+        onClick: this.#handleLoadMoreButtonClick
+      });
+      render(this.#loadMoreButtonComponent, this.#boardComponent.element);
+    }
+  }
 }

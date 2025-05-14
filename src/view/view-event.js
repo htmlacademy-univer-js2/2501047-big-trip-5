@@ -4,7 +4,7 @@ import {
   humanizeEventDueDate,
   humanizeEventTime,
   formatDuration,
-} from "../utils.js";
+} from "../utils/point.js";
 
 function createViewEvent(point) {
   // console.log(point)
