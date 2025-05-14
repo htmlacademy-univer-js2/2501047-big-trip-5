@@ -16,13 +16,15 @@ export default class PointModel {
  
   #createPoint() {
     const tempPoint = getRandomPoint();
-    const destination = this.#destinationModel.getDestinationById(
-      tempPoint.destination
-    );
-    const allOffersForType = this.#offersModel.getOffersByType(tempPoint.type);
-    const offers = (allOffersForType ?? []).filter((offer) =>
+    const destination = tempPoint != undefined 
+      ? this.#destinationModel.getDestinationById(tempPoint.destination)
+      : [];
+    const allOffersForType = tempPoint != undefined 
+    ? this.#offersModel.getOffersByType(tempPoint.type)
+    : [];
+    const offers = tempPoint != undefined ? (allOffersForType ?? []).filter((offer) =>
       tempPoint.offers.includes(offer.id)
-    );
+    ) : [];
  
     // Генерация HTML для выбранных офферов
     const offersHtml = this.#createOffersHtml(offers);
@@ -94,11 +96,11 @@ export default class PointModel {
   }
 
   #createPhotosTemplate(destination) {
-    const photosHtml = destination.pictures
+    const photosHtml = destination.length != 0 ? destination.pictures 
       .map((picture) => {
         return `<img class="event__photo" src="${picture.src}" alt="${picture.description}">`;
       })
-      .join("\n");
+      .join("\n") : "";
  
     return `
 <div class="event__photos-container">

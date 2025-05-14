@@ -1,5 +1,5 @@
 import AbstractView from '../framework/view/abstract-view.js';
-import { humanizeEventDueDate, humanizeEventDueDateEdit } from '../utils.js';
+import { humanizeEventDueDate, humanizeEventDueDateEdit } from '../utils/point.js';
 
 const BLANK_POINT = {
   id: null,
