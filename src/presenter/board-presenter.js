@@ -1,19 +1,20 @@
 import ViewSort from '../view/view-sort.js';
 import ViewAddForm from '../view/view-add-form.js';
-import ViewEvent from '../view/view-event.js';
-import TaskEditView from '../view/view-edit-form.js';
 import LoadMoreButtonView from '../view/load-more-button-view.js';
 import NoPointView from '../view/no-point-view.js';
 
 import ViewBoard from '../view/view-board.js';
 import ViewEventList from '../view/view-event-list.js';
 
-import {render, replace, remove} from '../framework/render.js';
+import {render, RenderPosition, remove} from '../framework/render.js';
 import {EVENT_COUNT} from "../const.js";
+import PointPresenter from './task-presenter.js';
+import {updateItem} from '../utils/common.js';
 
 const POINT_COUNT_PER_STEP = 5;
 
 export default class BoardPresenter {
+  #pointListComponent;
   #boardComponent = new ViewBoard();
   #eventListComponent = new ViewEventList();
   #boardContainer = null;
@@ -21,7 +22,9 @@ export default class BoardPresenter {
   #loadMoreButtonComponent = null;
   #renderedPointCount = POINT_COUNT_PER_STEP;
   #boardPoints = [];
-  // #handleLoadMoreButtonClick = null;
+  #sortComponent = new ViewSort();
+  #noPointComponent = new NoPointView();
+  #pointPresenters = new Map();
 
 
   constructor({boardContainer, pointModel}) {
@@ -33,77 +36,106 @@ export default class BoardPresenter {
     this.#boardPoints = structuredClone(this.#pointModel.points);    
     this.#renderBoard();
   }
-  #renderPoint({point}) {
-    const escKeyDownHandler = (evt) => {
-      if (evt.key === "Escape") {
-        evt.preventDefault();
-        replaceFormToCard();
-        document.removeEventListener("keydown", escKeyDownHandler);
-      }
-    };
-    const pointComponent = new ViewEvent({
-      point,
-      onEditClick: () => {
-        replaceCardToForm();
-        document.addEventListener("keydown", escKeyDownHandler);
-      },
+  #renderPoint(point) {
+    const pointPresenter = new PointPresenter({
+      pointListContainer: this.#eventListComponent.element,
+      onDataChange: this.#handlePointChange,
+      onModeChange: this.#handleModeChange,
     });
-    const pointEditComponent = new TaskEditView({
-      point,
-      onFormSubmit: () => {
-        replaceFormToCard();
-        document.removeEventListener("keydown", escKeyDownHandler);
-      },
-      onEditClick: () => {
-        replaceFormToCard();
-        document.removeEventListener("keydown", escKeyDownHandler);
-      },
-    });
-    
-    function replaceCardToForm() {
-      replace(pointEditComponent, pointComponent);
-    }
-
-    function replaceFormToCard() {
-      replace(pointComponent, pointEditComponent);
-    }
-
-    render(pointComponent, this.#eventListComponent.element);
+    pointPresenter.init(point);
+    this.#pointPresenters.set(point.id, pointPresenter);
   }
   #handleLoadMoreButtonClick = () => {
-    this.#boardPoints
-      .slice(this.#renderedPointCount, this.#renderedPointCount + POINT_COUNT_PER_STEP)
-      .forEach((point) => {
-        this.#renderPoint({point})
-      });
-
+    this.#renderPoints(this.#renderedPointCount, this.#renderedPointCount + POINT_COUNT_PER_STEP);
     this.#renderedPointCount += POINT_COUNT_PER_STEP;
     if (this.#renderedPointCount >= this.#boardPoints.length) {
       remove(this.#loadMoreButtonComponent);
     }
   };
-  #renderBoard(){
+
+  #handleModeChange = () => {
+    this.#pointPresenters.forEach((presenter) => presenter.resetView());
+  };
+
+  #handlePointChange = (updatedPoint) => {
+    this.#boardPoints = updateItem(this.#boardPoints, updatedPoint);
+    this.#pointPresenters.get(updatedPoint.id).init(updatedPoint);
+  };
+
+
+
+  #renderSort() {
+    render(this.#sortComponent, this.#boardComponent.element, RenderPosition.AFTERBEGIN);
+  } 
+
+  // #renderBoard(){
+  //   render(this.#boardComponent, this.#boardContainer);
+
+  //   if (this.#boardPoints.every((point) => point.isArchive)) {
+  //     render(new NoPointView(), this.#boardComponent.element);
+  //     return;
+  //   }
+
+  //   render(new ViewSort(), this.#boardComponent.element);
+
+
+  //   render(this.#eventListComponent, this.#boardComponent.element);
+
+  //   for (let i = 0; i < Math.min(this.#boardPoints.length, POINT_COUNT_PER_STEP); i++) {
+  //     this.#renderPoint({point:this.#boardPoints[i]})
+  //   }
+
+  //   if (this.#boardPoints.length > POINT_COUNT_PER_STEP) {
+  //     this.#loadMoreButtonComponent = new LoadMoreButtonView({
+  //       onClick: this.#handleLoadMoreButtonClick
+  //     });
+  //     render(this.#loadMoreButtonComponent, this.#boardComponent.element);
+  //   }
+  // }
+
+  #renderPoints(from, to) {
+    this.#boardPoints
+      .slice(from, to)
+      .forEach((point) => this.#renderPoint(point));
+  }
+
+  #renderNoPoints() {
+    render(this.#noPointComponent, this.#boardComponent.element, RenderPosition.AFTERBEGIN);
+  }
+
+  #renderLoadMoreButton() {
+    this.#loadMoreButtonComponent = new LoadMoreButtonView({
+      onClick: this.#handleLoadMoreButtonClick
+    });
+
+    render(this.#loadMoreButtonComponent, this.#boardComponent.element);
+  }
+
+  #clearPointList() {
+    this.#pointPresenters.forEach((presenter) => presenter.destroy());
+    this.#pointPresenters.clear();
+    this.#renderedPointCount = POINT_COUNT_PER_STEP;
+    remove(this.#loadMoreButtonComponent);
+  }
+
+  #renderPointList() {
+    render(this.#eventListComponent, this.#boardComponent.element);
+    this.#renderPoints(0, Math.min(this.#boardPoints.length, POINT_COUNT_PER_STEP));
+
+    if (this.#boardPoints.length > POINT_COUNT_PER_STEP) {
+      this.#renderLoadMoreButton();
+    }
+  }
+
+  #renderBoard() {
     render(this.#boardComponent, this.#boardContainer);
 
     if (this.#boardPoints.every((point) => point.isArchive)) {
-      render(new NoPointView(), this.#boardComponent.element);
+      this.#renderNoPoints();
       return;
     }
 
-    render(new ViewSort(), this.#boardComponent.element);
-
-
-    render(this.#eventListComponent, this.#boardComponent.element);
-
-    for (let i = 0; i < Math.min(this.#boardPoints.length, POINT_COUNT_PER_STEP); i++) {
-      this.#renderPoint({point:this.#boardPoints[i]})
-    }
-
-    if (this.#boardPoints.length > POINT_COUNT_PER_STEP) {
-      this.#loadMoreButtonComponent = new LoadMoreButtonView({
-        onClick: this.#handleLoadMoreButtonClick
-      });
-      render(this.#loadMoreButtonComponent, this.#boardComponent.element);
-    }
+    this.#renderSort();
+    this.#renderPointList();
   }
 }
