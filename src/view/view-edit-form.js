@@ -140,7 +140,7 @@ function createViewEditFormTemplate(point) {
   `;
 }
 
-export default class TaskEditView extends AbstractView {
+export default class PointEditView extends AbstractView {
   #point = null;
   #handleFormSubmit = null;
   #handleEditClick = null;
@@ -167,7 +167,7 @@ export default class TaskEditView extends AbstractView {
 
   #formSubmitHandler = (evt) => {
     evt.preventDefault();
-    this.#handleFormSubmit();
+    this.#handleFormSubmit(this.#point);
   };
 
   #editClickHandler = (evt) => {
