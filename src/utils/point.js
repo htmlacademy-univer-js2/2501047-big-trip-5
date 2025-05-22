@@ -56,6 +56,31 @@ function isPointEverything(point) {
   return true; // Все задачи, без фильтрации
 }
 
+function getWeightForNullDate(dateA, dateB) {
+  if (dateA === null && dateB === null) return 0;
+  if (dateA === null) return 1;
+  if (dateB === null) return -1;
+  return null;
+}
+ 
+// Сортировка по дате (по убыванию)
+function sortDateDown(pointA, pointB) {
+  const weight = getWeightForNullDate(pointA.dateFrom, pointB.dateFrom);
+  return weight ?? dayjs(pointB.dateFrom).diff(dayjs(pointA.dateFrom));
+}
+ 
+// Сортировка по времени (по убыванию длительности события)
+function sortByTimeDown(pointA, pointB) {
+  const durationA = dayjs(pointA.dateTo).diff(dayjs(pointA.dateFrom));
+  const durationB = dayjs(pointB.dateTo).diff(dayjs(pointB.dateFrom));
+  return durationB - durationA;
+}
+ 
+// Сортировка по цене (по убыванию)
+function sortByPriceDown(pointA, pointB) {
+  return pointB.basePrice - pointA.basePrice;
+}
+
 export {
   humanizeEventDueDate,
   humanizeEventDueDateEdit,
@@ -65,4 +90,7 @@ export {
   isPointPresent,
   isPointPast,
   isPointEverything,
+  sortDateDown,
+  sortByTimeDown,
+  sortByPriceDown,
 };

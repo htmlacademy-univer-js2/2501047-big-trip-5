@@ -11,6 +11,9 @@ import {EVENT_COUNT} from "../const.js";
 import PointPresenter from './task-presenter.js';
 import {updateItem} from '../utils/common.js';
 
+import {sortDateDown, sortByTimeDown, sortByPriceDown} from '../utils/point.js';
+import {SortType} from '../const.js';
+
 const POINT_COUNT_PER_STEP = 5;
 
 export default class BoardPresenter {
@@ -22,9 +25,11 @@ export default class BoardPresenter {
   #loadMoreButtonComponent = null;
   #renderedPointCount = POINT_COUNT_PER_STEP;
   #boardPoints = [];
-  #sortComponent = new ViewSort();
+  #sortComponent = null;
   #noPointComponent = new NoPointView();
   #pointPresenters = new Map();
+  #currentSortType = SortType.DATE;
+  #sourcedBoardPoints = [];
 
 
   constructor({boardContainer, pointModel}) {
@@ -34,6 +39,7 @@ export default class BoardPresenter {
 
   init() {
     this.#boardPoints = structuredClone(this.#pointModel.points);    
+    this.#sourcedBoardPoints = structuredClone(this.#pointModel.points);
     this.#renderBoard();
   }
   #renderPoint(point) {
@@ -59,39 +65,45 @@ export default class BoardPresenter {
 
   #handlePointChange = (updatedPoint) => {
     this.#boardPoints = updateItem(this.#boardPoints, updatedPoint);
+    this.#sourcedBoardPoints = updateItem(this.#sourcedBoardPoints, updatedPoint);
     this.#pointPresenters.get(updatedPoint.id).init(updatedPoint);
   };
 
+  #sortPoints(sortType) {
+    switch (sortType) {
+      case SortType.DATE:
+        this.#boardPoints.sort(sortDateDown);
+        break;
+      case SortType.TIME:
+        this.#boardPoints.sort(sortByTimeDown);
+        break;
+      case SortType.PRICE:
+        this.#boardPoints.sort(sortByPriceDown);
+        break;
+      default:
+        this.#boardPoints = structuredClone(this.#sourcedBoardPoints);
+    }
 
+    this.#currentSortType = sortType;
+  }
+
+  #handleSortTypeChange = (sortType) => {
+    if (this.#currentSortType === sortType) {
+      return;
+    }
+
+    this.#sortPoints(sortType);
+    this.#clearPointList();
+    this.#renderPointList();
+    };
 
   #renderSort() {
+        this.#sortComponent = new ViewSort({
+      onSortTypeChange: this.#handleSortTypeChange
+    });
+    
     render(this.#sortComponent, this.#boardComponent.element, RenderPosition.AFTERBEGIN);
   } 
-
-  // #renderBoard(){
-  //   render(this.#boardComponent, this.#boardContainer);
-
-  //   if (this.#boardPoints.every((point) => point.isArchive)) {
-  //     render(new NoPointView(), this.#boardComponent.element);
-  //     return;
-  //   }
-
-  //   render(new ViewSort(), this.#boardComponent.element);
-
-
-  //   render(this.#eventListComponent, this.#boardComponent.element);
-
-  //   for (let i = 0; i < Math.min(this.#boardPoints.length, POINT_COUNT_PER_STEP); i++) {
-  //     this.#renderPoint({point:this.#boardPoints[i]})
-  //   }
-
-  //   if (this.#boardPoints.length > POINT_COUNT_PER_STEP) {
-  //     this.#loadMoreButtonComponent = new LoadMoreButtonView({
-  //       onClick: this.#handleLoadMoreButtonClick
-  //     });
-  //     render(this.#loadMoreButtonComponent, this.#boardComponent.element);
-  //   }
-  // }
 
   #renderPoints(from, to) {
     this.#boardPoints
@@ -114,7 +126,7 @@ export default class BoardPresenter {
   #clearPointList() {
     this.#pointPresenters.forEach((presenter) => presenter.destroy());
     this.#pointPresenters.clear();
-    this.#renderedPointCount = POINT_COUNT_PER_STEP;
+    this.#eventListComponent.element.innerHTML = ""; // если нужно явно очистить DOM
     remove(this.#loadMoreButtonComponent);
   }
 

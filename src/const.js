@@ -7,4 +7,10 @@ const FilterType = {
 
 const EVENT_COUNT = 25;
 
-export { FilterType, EVENT_COUNT };
+const SortType = {
+  DATE: 'date',
+  TIME: 'time',
+  PRICE: 'price',
+};
+
+export { FilterType, EVENT_COUNT, SortType};
