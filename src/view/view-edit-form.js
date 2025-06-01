@@ -2,6 +2,9 @@ import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
 import { humanizeEventDueDate, humanizeEventDueDateEdit } from '../utils/point.js';
 import { getDestination } from '../mock/destination.js';
 import OffersModel from "../model/offers-model.js";
+import flatpickr from 'flatpickr';
+
+import 'flatpickr/dist/flatpickr.min.css';
 
 const BLANK_POINT = {
   id: null,
@@ -163,6 +166,9 @@ export default class PointEditView extends AbstractStatefulView {
   #handleFormSubmit = null;
   #handleEditClick = null;
   #offersModel = new OffersModel();
+  #datepicker = null;
+  #flatpickrFrom;
+  #flatpickrTo;
 
 
   constructor({point = BLANK_POINT, onFormSubmit, onEditClick}) {
@@ -174,6 +180,7 @@ export default class PointEditView extends AbstractStatefulView {
     //   .querySelector(".card__btn--edit"))
 
       this._restoreHandlers();
+      this.#initFlatpickr();
 
     // this.element
     // .querySelector("form")
@@ -182,6 +189,100 @@ export default class PointEditView extends AbstractStatefulView {
     // this.element
     // .querySelector(".card__btn--edit")
     // .addEventListener("click", this.#editClickHandler);
+  }
+
+  #dateFromChangeHandler = ([selectedDate]) => {
+    // Обновляем состояние даты начала
+    this._setState({ dateFrom: selectedDate });
+ 
+    // Можно добавить логику для ограничения даты конца, если надо
+    if (
+      this.#flatpickrTo &&
+      this._state.dateTo &&
+      selectedDate > this._state.dateTo
+    ) {
+      this._setState({ dateTo: selectedDate });
+      this.#flatpickrTo.setDate(selectedDate, false);
+    }
+  };
+
+  #dateToChangeHandler = ([selectedDate]) => {
+    // Обновляем состояние даты конца
+    this._setState({ dateTo: selectedDate });
+ 
+    // Можно добавить логику ограничения даты начала, если надо
+    if (
+      this.#flatpickrFrom &&
+      this._state.dateFrom &&
+      selectedDate < this._state.dateFrom
+    ) {
+      this._setState({ dateFrom: selectedDate });
+      this.#flatpickrFrom.setDate(selectedDate, false);
+    }
+  };
+  
+  #initFlatpickr() {
+    // Если уже были flatpickr — уничтожаем, чтобы избежать утечек
+    if (this.#flatpickrFrom) {
+      this.#flatpickrFrom.destroy();
+      this.#flatpickrFrom = null;
+    }
+    if (this.#flatpickrTo) {
+      this.#flatpickrTo.destroy();
+      this.#flatpickrTo = null;
+    }
+ 
+    // Инициализация flatpickr для даты начала
+    this.#flatpickrFrom = flatpickr(
+      this.element.querySelector("#event-start-time-1"),
+      {
+        enableTime: true,
+        dateFormat: "d/m/Y H:i",
+        defaultDate: this._state.dateFrom,
+        onChange: this.#dateFromChangeHandler,
+      }
+    );
+ 
+    // Инициализация flatpickr для даты конца
+    this.#flatpickrTo = flatpickr(
+      this.element.querySelector("#event-end-time-1"),
+      {
+        enableTime: true,
+        dateFormat: "d/m/Y H:i",
+        defaultDate: this._state.dateTo,
+        onChange: this.#dateToChangeHandler,
+      }
+    );
+  }
+
+    removeElement() {
+    super.removeElement();
+
+    if (this.#datepicker) {
+      this.#datepicker.destroy();
+      this.#datepicker = null;
+    }
+  }
+
+  #dueDateChangeHandler = ([userDate]) => {
+    this.updateElement({
+      dueDate: userDate,
+    });
+  };
+
+  #setDatepicker() {
+    if (this._state.isDueDate) {
+      // flatpickr есть смысл инициализировать только в случае,
+      // если поле выбора даты доступно для заполнения
+      this.#datepicker = flatpickr(
+        this.element.querySelector('.card__date'),
+        {
+          dateFormat: 'j F',
+          defaultDate: this._state.dueDate,
+          onChange: this.#dueDateChangeHandler, // На событие flatpickr передаём наш колбэк
+        },
+      );
+    }
   }
 
 _restoreHandlers() {
