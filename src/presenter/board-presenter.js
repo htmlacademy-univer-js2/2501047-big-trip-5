@@ -10,6 +10,7 @@ import {render, RenderPosition, remove} from '../framework/render.js';
 import {EVENT_COUNT} from "../const.js";
 import PointPresenter from './task-presenter.js';
 import {updateItem} from '../utils/common.js';
+import ButtonPresenter from './button-presenter.js';
 
 import {sortDateDown, sortByTimeDown, sortByPriceDown} from '../utils/point.js';
 import {SortType} from '../const.js';
@@ -30,11 +31,15 @@ export default class BoardPresenter {
   #pointPresenters = new Map();
   #currentSortType = SortType.DATE;
   #sourcedBoardPoints = [];
+  #buttonElement = "";
+  #tripEvents = "";
 
 
   constructor({boardContainer, pointModel}) {
     this.#boardContainer = boardContainer;
     this.#pointModel = pointModel;
+    this.#buttonElement = document.querySelector(".trip-main");
+    this.#tripEvents = document.querySelector('.trip-events');
   }
 
   init() {
@@ -123,6 +128,15 @@ export default class BoardPresenter {
     render(this.#loadMoreButtonComponent, this.#boardComponent.element);
   }
 
+  #renderNewButton() {
+    const buttonPresenter = new ButtonPresenter({
+      buttonContainer: this.#buttonElement,
+      formContainer: this.#tripEvents,
+      pointModel: this.#pointModel,
+    });
+    buttonPresenter.init();
+  }
+
   #clearPointList() {
     this.#pointPresenters.forEach((presenter) => presenter.destroy());
     this.#pointPresenters.clear();
@@ -149,5 +163,6 @@ export default class BoardPresenter {
 
     this.#renderSort();
     this.#renderPointList();
+    this.#renderNewButton();
   }
 }

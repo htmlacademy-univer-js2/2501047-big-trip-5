@@ -1,3 +1,4 @@
+import ButtonPresenter from './presenter/button-presenter.js';
 import {render} from './framework/render.js';
 import ViewFilter from './view/view-filter.js';
 import BoardPresenter from './presenter/board-presenter.js';
@@ -15,6 +16,8 @@ const destinationModel = new DestinationModel();
 const offersModel = new OffersModel();
 const pointModel = new PointModel(destinationModel, offersModel);
 
+// const buttonElement = tripBody.querySelector(".trip-main");
+
 const filters = generateFilter(pointModel.points);
 const boardPresenter = new BoardPresenter({
     boardContainer: tripEvents, 
@@ -22,5 +25,12 @@ const boardPresenter = new BoardPresenter({
 });
 
 render(new ViewFilter({filters}), filterHeaderElement);
+
+// const buttonPresenter = new ButtonPresenter({
+//   buttonContainer: buttonElement,
+//   formContainer: tripEvents,
+//   pointModel,
+// });
+// buttonPresenter.init();
 
 boardPresenter.init();

@@ -110,6 +110,11 @@ export default class PointModel {
 </div>`.trim();
   }
 
+  addPoint(newPoint) {
+    this.#points = [newPoint, ...this.#points];
+    console.log(this.#points)
+  }
+
   get points() {
     return this.#points;
   }

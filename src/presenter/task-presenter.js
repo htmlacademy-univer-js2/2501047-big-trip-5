@@ -39,6 +39,7 @@ export default class PointPresenter {
       point: this.#point,
       onFormSubmit: this.#handleFormSubmit,
       onEditClick: () => {
+        this.#pointEditComponent.reset(this.#point);
         replace(this.#pointComponent, this.#pointEditComponent);
         document.removeEventListener("keydown", this.#escKeyDownHandler);
         this.#mode = Mode.DEFAULT;
