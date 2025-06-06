@@ -1,11 +1,14 @@
 import {render, replace, remove} from '../framework/render.js';
 import ViewEvent from '../view/view-event.js';
 import PointEditView from '../view/view-edit-form.js';
+import {UserAction, UpdateType} from '../const.js';
 
 const Mode = {
   DEFAULT: 'DEFAULT',
   EDITING: 'EDITING',
 };
+
+const BLANK_POINT_ID_PLACEHOLDER = null;
 
 export default class PointPresenter {
   #pointListContainer = null;
@@ -17,12 +20,14 @@ export default class PointPresenter {
 
   #point = null;
   #mode = Mode.DEFAULT;
+  #boardPresenterRef = null;
 
-  constructor({pointListContainer, onDataChange, onModeChange}) {
+  constructor({pointListContainer, onDataChange, onModeChange, boardPresenterRef}) {
     this.#pointListContainer = pointListContainer;
     this.#handleDataChange = onDataChange;
     this.#handleModeChange = onModeChange;
-  }
+    this.#boardPresenterRef = boardPresenterRef;
+  } 
 
   init(point) {
     this.#point = point;
@@ -35,15 +40,12 @@ export default class PointPresenter {
       onEditClick: this.#handleEditClick,
       onFavoriteClick: this.#handleFavoriteClick,
     });
+
     this.#pointEditComponent = new PointEditView({
       point: this.#point,
-      onFormSubmit: this.#handleFormSubmit,
-      onEditClick: () => {
-        this.#pointEditComponent.reset(this.#point);
-        replace(this.#pointComponent, this.#pointEditComponent);
-        document.removeEventListener("keydown", this.#escKeyDownHandler);
-        this.#mode = Mode.DEFAULT;
-      },
+        onDataChange: this.#handleFormUpdateSubmit,
+        onCancelClick: this.#handleCancelEditClick,
+        onDeleteClick: this.#handleDeleteClick,
     });
 
         if (prevPointComponent === null || prevPointEditComponent === null) {
@@ -62,6 +64,38 @@ export default class PointPresenter {
     remove(prevPointComponent);
     remove(prevPointEditComponent);
   }
+
+  #handleFormUpdateSubmit = (point) => {
+ 
+    this.#handleDataChange(UserAction.UPDATE_POINT, UpdateType.MINOR, point);
+    // this.#replaceFormToCard();
+    };
+
+    #handleCancelEditClick = () => {
+    const isNewPoint =
+      this.#point.id === BLANK_POINT_ID_PLACEHOLDER || this.#point.id === null;
+ 
+    if (isNewPoint) {
+      // Если это новая точка и пользователь нажал "Cancel",
+      // нужно удалить этот презентер и его компонент формы.
+      // Сообщаем BoardPresenter, если ему нужно что-то сделать (например, убрать кнопку "New Event")
+      if (
+        this.#boardPresenterRef &&
+        typeof this.#boardPresenterRef.handleCancelAddPoint === "function"
+      ) {
+        this.#boardPresenterRef.handleCancelAddPoint();
+      }
+      this.destroy(); // Самоуничтожаемся
+      return;
+    }
+ 
+    // Для существующей точки - сбросить изменения в форме и закрыть
+    this.#pointEditComponent.reset(this.#point); // Сбрасываем состояние формы
+    this.#replaceFormToCard();
+    };
+    #handleDeleteClick = (point) => {
+    this.#handleDataChange(UserAction.DELETE_POINT, UpdateType.MINOR, point);
+    };
 
   destroy() {
     remove(this.#pointComponent);
@@ -99,11 +133,9 @@ export default class PointPresenter {
   };
 
   #handleFavoriteClick = () => {
-    this.#handleDataChange({...this.#point, isFavorite: !this.#point.isFavorite});
-  };
-
-  #handleFormSubmit = (point) => {
-    this.#handleDataChange(point);
-    this.#replaceFormToCard();
+    this.#handleDataChange(
+      UserAction.UPDATE_POINT,
+      UpdateType.MINOR,
+      {...this.#point, isFavorite: !this.#point.isFavorite});
   };
 }

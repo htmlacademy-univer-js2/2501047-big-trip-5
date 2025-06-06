@@ -163,24 +163,24 @@ function createViewEditFormTemplate(point) {
 }
 
 export default class PointEditView extends AbstractStatefulView {
-  #handleFormSubmit = null;
-  #handleEditClick = null;
+  #handleDataChange = null;
+  #handleCancelClick = null;
+  #handleDeleteClick = null;
   #offersModel = new OffersModel();
   #datepicker = null;
   #flatpickrFrom;
   #flatpickrTo;
 
 
-  constructor({point = BLANK_POINT, onFormSubmit, onEditClick}) {
+  constructor({point = BLANK_POINT, onDataChange, onCancelClick, onDeleteClick,}) {
     super();
     this._setState(PointEditView.parsePointToState(point));
-    this.#handleFormSubmit = onFormSubmit;
-    this.#handleEditClick = onEditClick;
-    // console.log(this.element
+    this.#handleDataChange = onDataChange;
+    this.#handleCancelClick = onCancelClick;
+    this.#handleDeleteClick = onDeleteClick;
     //   .querySelector(".card__btn--edit"))
 
       this._restoreHandlers();
-      this.#initFlatpickr();
 
     // this.element
     // .querySelector("form")
@@ -285,14 +285,67 @@ export default class PointEditView extends AbstractStatefulView {
     }
   }
 
-_restoreHandlers() {
-    this.element
-      .querySelector("form")
-      .addEventListener("submit", this.#formSubmitHandler);
+   #saveButtonClickHandler = (evt) => {
+    // evt может быть undefined, если вызвано из formSubmitHandler без аргумента
+    if (evt) {
+      evt.preventDefault();
+    }
+    const pointToSave = PointEditView.parseStateToPoint(this._state);
  
-    this.element
-      .querySelector(".card__btn--edit")
-      .addEventListener("click", this.#editClickHandler);
+    // const actionType =
+    //   this._state.id === null
+    //     ? "ADD_TASK" /*UserAction.ADD_TASK*/
+    //     : "UPDATE_TASK"; /*UserAction.UPDATE_TASK*/
+    // // Для нового элемента обычно MINOR, так как меняется структура списка
+    // // Для обновления существующего PATCH, если только он меняется, или MINOR если влияет на сортировку/фильтры
+    // const updateType =
+    //   actionType === "ADD_TASK" /*UserAction.ADD_TASK*/
+    //     ? "MINOR" /*UpdateType.MINOR*/
+    //     : "PATCH"; /*UpdateType.PATCH*/
+ 
+    this.#handleDataChange(pointToSave);
+  };
+ 
+  // Обработчик для кнопки "Delete" или "Cancel" (для новой точки)
+  #resetButtonClickHandler = (evt) => {
+    evt.preventDefault();
+    if (this._state.id === null) {
+      // Это новая точка, кнопка "Cancel"
+      this.#handleCancelClick(); // Презентер удалит компонент новой точки
+    } else {
+      // Это существующая точка, кнопка "Delete"
+      const pointToDelete = PointEditView.parseStateToPoint(this._state);
+      this.#handleDeleteClick(
+        pointToDelete
+      );
+    }
+  };
+  // Обработчик для кнопки "Rollup" (свернуть/отменить редактирование существующей)
+  #rollupButtonClickHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleCancelClick(); // Презентер должен решить, что делать (например, reset + replaceFormToCard)
+  };
+
+_restoreHandlers() {
+  this.#initFlatpickr();
+
+  const formElement = this.element.querySelector("form");
+    formElement.addEventListener("submit", this.#saveButtonClickHandler); // Используем общий обработчик
+ 
+ 
+    const rollupButton = this.element.querySelector(".event__rollup-btn");
+    if (rollupButton) {
+      rollupButton.addEventListener("click", this.#rollupButtonClickHandler);
+    }
+ 
+    const resetButton = this.element.querySelector(".event__reset-btn");
+    if (resetButton) {
+      resetButton.addEventListener("click", this.#resetButtonClickHandler);
+    }
+ 
+    // this.element
+    //   .querySelector(".card__btn--edit")
+    //   .addEventListener("click", this.#editClickHandler);
     this.element
       .querySelector(".event__input--price")
       .addEventListener("input", this.#priceInputHandler);
@@ -312,11 +365,6 @@ _restoreHandlers() {
     this.updateElement(PointEditView.parsePointToState(point));
   }
 
-  #formSubmitHandler = (evt) => {
-    evt.preventDefault();
-    this.#handleFormSubmit(PointEditView.parseStateToPoint(this._state));
-  };
-
     static parsePointToState(point) {
       const state = {...point,};
     return state;
@@ -328,10 +376,10 @@ _restoreHandlers() {
     return point;
   }
 
-  #editClickHandler = (evt) => {
-    evt.preventDefault();
-    this.#handleEditClick();
-  };
+  // #editClickHandler = (evt) => {
+  //   evt.preventDefault();
+  //   this.#handleEditClick();
+  // };
  
   #priceInputHandler = (evt) => {
     // Получаем значение из input

@@ -3,6 +3,7 @@ import { humanizeEventDueDate, humanizeEventDueDateEdit } from '../utils/point.j
 import { getDestination } from '../mock/destination.js';
 import OffersModel from "../model/offers-model.js";
 import flatpickr from 'flatpickr';
+import { UpdateType, UserAction } from '../const.js';
 
 import 'flatpickr/dist/flatpickr.min.css';
 
@@ -172,8 +173,15 @@ export default class ViewAddForm extends AbstractStatefulView{
     this.#handleCencelClick = onHandleCancelClick;
  
     this._restoreHandlers();
-    this.#initFlatpickr();
+
   }
+
+  #escKeyDownHandler = (evt) => {
+    if (evt.key === 'Escape') {
+      evt.preventDefault();
+      this.#handleCencelClick();
+    }
+  };
 
   #dateFromChangeHandler = ([selectedDate]) => {
       // Обновляем состояние даты начала
@@ -240,9 +248,12 @@ export default class ViewAddForm extends AbstractStatefulView{
     }
 
   _restoreHandlers() {
-    this.element
-      .querySelector(".event__save-btn")
-      .addEventListener("click", this.#handleFormSubmit);
+    this.#initFlatpickr();
+    document.addEventListener('keydown', this.#escKeyDownHandler);
+
+    // this.element
+    //   .querySelector(".event__save-btn")
+    //   .addEventListener("click", this.#handleFormSubmit);
  
     this.element
       .querySelector(".event__reset-btn")
@@ -251,6 +262,10 @@ export default class ViewAddForm extends AbstractStatefulView{
     this.element
       .querySelector("form")
       .addEventListener("submit", this.#formSubmitHandler);
+
+    this.element
+      .querySelector('.event__rollup-btn')
+      .addEventListener('click', this.#cancelClickHandler);
  
     // this.element
     //   .querySelector(".card__btn--edit")
@@ -268,6 +283,8 @@ export default class ViewAddForm extends AbstractStatefulView{
 
 removeElement() {
     super.removeElement();
+
+    document.removeEventListener('keydown', this.#escKeyDownHandler);
 
     if (this.#datepicker) {
       this.#datepicker.destroy();
@@ -297,6 +314,7 @@ removeElement() {
   }
 
   #formSubmitHandler = (evt) => {
+    console.log(evt)
   evt.preventDefault();
   
   // Валидация данных перед сохранением
@@ -305,7 +323,7 @@ removeElement() {
   }
 
   // Преобразуем состояние в формат точки и передаем наружу
-  this.#handleFormSubmit(ViewAddForm.parseStateToPoint(this._state));
+  this.#handleFormSubmit(ViewAddForm.parseStateToPoint(this._state), UpdateType.MINOR);
 };
 
 // Метод для валидации данных формы
@@ -346,7 +364,6 @@ removeElement() {
   }
 
   #editClickHandler = (evt) => {
-    console.log(123)
     evt.preventDefault();
     this.#handleEditClick();
   };
@@ -438,7 +455,6 @@ removeElement() {
   };
 
   getFormData() {
-    console.log(this._state);
  
     return {
       type: this._state.type || "flight",
