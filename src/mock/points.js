@@ -7,8 +7,8 @@ const mockPoints = [
         {
           "id": "2ed1456d-454d-40b1-886c-8d78434eaf55",
           "basePrice": 5149,
-          "dateFrom": "2027-03-12T12:00:22.952Z",
-          "dateTo": "2027-03-14T04:00:22.952Z",
+          "dateFrom": "2025-06-06T12:00:22.952Z",
+          "dateTo": "2025-06-07T04:00:22.952Z",
           "destination": "71ac05ee-1fbf-47b5-a982-605bf344dfbf",
           "isFavorite": false,
           "offers": [
@@ -23,8 +23,8 @@ const mockPoints = [
         {
           "id": "e9c99472-94f2-4306-bc15-bea2503ea92e",
           "basePrice": 1905,
-          "dateFrom": "2027-03-14T04:00:22.952Z",
-          "dateTo": "2027-03-14T15:00:22.952Z",
+          "dateFrom": "2025-06-06T04:00:22.952Z",
+          "dateTo": "2025-06-07T15:00:22.952Z",
           "destination": "690d79cf-6ab9-4dd2-b8f1-f6d18b22d03e",
           "isFavorite": false,
           "offers": [
@@ -37,8 +37,8 @@ const mockPoints = [
         {
           "id": "36db62e3-9614-42d4-ad3a-945a57bcf0b9",
           "basePrice": 6378,
-          "dateFrom": "2027-03-14T15:00:22.952Z",
-          "dateTo": "2027-03-16T15:00:22.952Z",
+          "dateFrom": "2024-03-14T15:00:22.952Z",
+          "dateTo": "2024-03-16T15:00:22.952Z",
           "destination": "532a1698-0f25-4198-af15-be7dd79fa75f",
           "isFavorite": true,
           "offers": [
@@ -50,8 +50,8 @@ const mockPoints = [
         {
           "id": "a2e3c694-77f8-469b-bce7-594182afaa31",
           "basePrice": 1292,
-          "dateFrom": "2027-03-16T15:00:22.952Z",
-          "dateTo": "2027-03-17T12:00:22.952Z",
+          "dateFrom": "2024-03-16T15:00:22.952Z",
+          "dateTo": "2024-03-17T12:00:22.952Z",
           "destination": "bf22de7d-069b-4806-80bf-07800007224f",
           "isFavorite": false,
           "offers": [

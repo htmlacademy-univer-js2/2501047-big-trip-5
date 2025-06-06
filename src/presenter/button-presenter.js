@@ -1,3 +1,4 @@
+import { UpdateType } from "../const.js";
 import { render } from "../framework/render.js";
 import ButtonView from "../view/button-view.js";
 import ViewAddForm from "../view/view-add-form.js";
@@ -43,12 +44,11 @@ export default class ButtonPresenter {
   };
  
   #handleFormSubmit = (evt) => {
-    evt.preventDefault();
-    // Здесь можно добавить сохранение в модель, если будет нужно
-    const newPointData = this.#formComponent.getFormData();
-    this.#pointModel.addPoint(newPointData);
-    this.#destroyForm();
-  };
+  // evt.preventDefault();
+  const newPointData = this.#formComponent.getFormData();
+  this.#pointModel.addPoint(UpdateType.MINOR, newPointData);
+  this.#destroyForm();
+};
  
   #destroyForm() {
     this.#formComponent.element.remove();

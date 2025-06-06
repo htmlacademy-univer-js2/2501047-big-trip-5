@@ -74,8 +74,6 @@ export default class ViewEvent extends AbstractView {
     this.#handleEditClick = onEditClick;
     this.#handleFavoriteClick = onFavoriteClick;
 
-
-
     this.element.querySelector('.card__btn--edit')
       .addEventListener('click', this.#editClickHandler);
     this.element.querySelector('.event__favorite-btn')
