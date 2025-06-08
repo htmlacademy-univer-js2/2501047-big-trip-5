@@ -1,7 +1,5 @@
 import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
-import { humanizeEventDueDate, humanizeEventDueDateEdit } from '../utils/point.js';
-import { getDestination } from '../mock/destination.js';
-import OffersModel from "../model/offers-model.js";
+import { humanizeEventDueDateEdit } from '../utils/point.js';
 import flatpickr from 'flatpickr';
 
 import 'flatpickr/dist/flatpickr.min.css';
@@ -11,10 +9,16 @@ const BLANK_POINT = {
   basePrice: 0,
   dateFrom: null,
   dateTo: null,
-  destination: null,
+  destination: {
+    name: '',
+    description: '',
+    pictures: []
+  },
   isFavorite: false,
   offers: [],
-  type: null,
+  type: 'flight',
+  destinationSelectHtml: '',
+  offersEditHtml: ''
 };
 
 function createPhotosTemplate(destination) {
@@ -33,25 +37,23 @@ function createPhotosTemplate(destination) {
   `;
 }
 
-function createDestinationSelectTemplate(currentDestinationName, type) {
-  const destinations = getDestination();
- 
+function createDestinationSelectTemplate(currentDestinationName, type, allDestinations) {
   return `
-      <label class="event__label" for="event-destination-select">
-        ${type}
-      </label>
-      <select class="event__input event__input--destination" id="event-destination-select" name="event-destination">
-        ${destinations
-      .map(
-        (dest) => `
-          <option value="${dest.name}" ${
-          dest.name === currentDestinationName ? "selected" : ""
-        }>${dest.name}</option>
-        `
-      )
-      .join("")}
-      </select>
-    `;
+    <label class="event__label" for="event-destination-select">
+      ${type}
+    </label>
+    <select class="event__input event__input--destination" id="event-destination-select" name="event-destination">
+      ${allDestinations
+        .map(
+          (dest) => `
+            <option value="${dest.name}" ${
+              dest.name === currentDestinationName ? "selected" : ""
+            }>${dest.name}</option>
+          `
+        )
+        .join("")}
+    </select>
+  `;
 }
 
 function createEventTypeListTemplate(currentType) {
@@ -96,12 +98,12 @@ function createViewEditFormTemplate(point) {
     dateFrom,
     dateTo,
     basePrice,
+    destinationSelectHtml,
     offersHtml,
-    offersEditHtml,
-    photosTemplate,
+    offersEditHtml = '',
+    photosTemplate = '',
     favorite,
   } = point;
-
 
   return `
     <li>
@@ -120,7 +122,7 @@ function createViewEditFormTemplate(point) {
         </div>
 
         <div class="event__field-group  event__field-group--destination">
-          ${createDestinationSelectTemplate(destination.name, type)}
+          ${destinationSelectHtml} 
         </div>
 
         <div class="event__field-group  event__field-group--time">
@@ -166,36 +168,52 @@ export default class PointEditView extends AbstractStatefulView {
   #handleDataChange = null;
   #handleCancelClick = null;
   #handleDeleteClick = null;
-  #offersModel = new OffersModel();
+  #offersModel = null;
+  #destinationModel = null;
   #datepicker = null;
   #flatpickrFrom;
   #flatpickrTo;
 
 
-  constructor({point = BLANK_POINT, onDataChange, onCancelClick, onDeleteClick,}) {
-    super();
-    this._setState(PointEditView.parsePointToState(point));
-    this.#handleDataChange = onDataChange;
-    this.#handleCancelClick = onCancelClick;
-    this.#handleDeleteClick = onDeleteClick;
-    //   .querySelector(".card__btn--edit"))
+  constructor({point = BLANK_POINT, onDataChange, onCancelClick, onDeleteClick, offersModel, destinationModel}) {
+  super();
+  this.#offersModel = offersModel;
+  this.#destinationModel = destinationModel;
+  this._setState(this.#parsePointToState(point));
+  this.#handleDataChange = onDataChange;
+  this.#handleCancelClick = onCancelClick;
+  this.#handleDeleteClick = onDeleteClick;
+  
+  this._restoreHandlers();
+}
 
-      this._restoreHandlers();
-
-    // this.element
-    // .querySelector("form")
-    // .addEventListener("submit", this.#formSubmitHandler);
-
-    // this.element
-    // .querySelector(".card__btn--edit")
-    // .addEventListener("click", this.#editClickHandler);
-  }
+#parsePointToState(point) {
+  const allDestinations = this.#destinationModel.destinations;
+  const destinationName = point.destination?.name || '';
+  const allOffersForType = this.#offersModel.getOffersByType(point.type) || [];
+  
+  return {
+    ...point,
+    destinationSelectHtml: createDestinationSelectTemplate(
+      destinationName,
+      point.type,
+      allDestinations
+    ),
+    offersEditHtml: this.#createOffersTemplate(
+      allOffersForType,
+      point.offers || []
+    ),
+    destination: point.destination || {
+      name: '',
+      description: '',
+      pictures: []
+    }
+  };
+}
 
   #dateFromChangeHandler = ([selectedDate]) => {
-    // Обновляем состояние даты начала
     this._setState({ dateFrom: selectedDate });
- 
-    // Можно добавить логику для ограничения даты конца, если надо
+
     if (
       this.#flatpickrTo &&
       this._state.dateTo &&
@@ -207,10 +225,8 @@ export default class PointEditView extends AbstractStatefulView {
   };
 
   #dateToChangeHandler = ([selectedDate]) => {
-    // Обновляем состояние даты конца
     this._setState({ dateTo: selectedDate });
  
-    // Можно добавить логику ограничения даты начала, если надо
     if (
       this.#flatpickrFrom &&
       this._state.dateFrom &&
@@ -222,7 +238,6 @@ export default class PointEditView extends AbstractStatefulView {
   };
   
   #initFlatpickr() {
-    // Если уже были flatpickr — уничтожаем, чтобы избежать утечек
     if (this.#flatpickrFrom) {
       this.#flatpickrFrom.destroy();
       this.#flatpickrFrom = null;
@@ -232,7 +247,6 @@ export default class PointEditView extends AbstractStatefulView {
       this.#flatpickrTo = null;
     }
  
-    // Инициализация flatpickr для даты начала
     this.#flatpickrFrom = flatpickr(
       this.element.querySelector("#event-start-time-1"),
       {
@@ -243,7 +257,6 @@ export default class PointEditView extends AbstractStatefulView {
       }
     );
  
-    // Инициализация flatpickr для даты конца
     this.#flatpickrTo = flatpickr(
       this.element.querySelector("#event-end-time-1"),
       {
@@ -272,97 +285,121 @@ export default class PointEditView extends AbstractStatefulView {
 
   #setDatepicker() {
     if (this._state.isDueDate) {
-      // flatpickr есть смысл инициализировать только в случае,
-      // если поле выбора даты доступно для заполнения
       this.#datepicker = flatpickr(
         this.element.querySelector('.card__date'),
         {
           dateFormat: 'j F',
           defaultDate: this._state.dueDate,
-          onChange: this.#dueDateChangeHandler, // На событие flatpickr передаём наш колбэк
+          onChange: this.#dueDateChangeHandler,
         },
       );
     }
   }
 
    #saveButtonClickHandler = (evt) => {
-    // evt может быть undefined, если вызвано из formSubmitHandler без аргумента
     if (evt) {
       evt.preventDefault();
     }
     const pointToSave = PointEditView.parseStateToPoint(this._state);
  
-    // const actionType =
-    //   this._state.id === null
-    //     ? "ADD_TASK" /*UserAction.ADD_TASK*/
-    //     : "UPDATE_TASK"; /*UserAction.UPDATE_TASK*/
-    // // Для нового элемента обычно MINOR, так как меняется структура списка
-    // // Для обновления существующего PATCH, если только он меняется, или MINOR если влияет на сортировку/фильтры
-    // const updateType =
-    //   actionType === "ADD_TASK" /*UserAction.ADD_TASK*/
-    //     ? "MINOR" /*UpdateType.MINOR*/
-    //     : "PATCH"; /*UpdateType.PATCH*/
- 
     this.#handleDataChange(pointToSave);
   };
  
-  // Обработчик для кнопки "Delete" или "Cancel" (для новой точки)
   #resetButtonClickHandler = (evt) => {
     evt.preventDefault();
     if (this._state.id === null) {
-      // Это новая точка, кнопка "Cancel"
-      this.#handleCancelClick(); // Презентер удалит компонент новой точки
+      this.#handleCancelClick();
     } else {
-      // Это существующая точка, кнопка "Delete"
       const pointToDelete = PointEditView.parseStateToPoint(this._state);
       this.#handleDeleteClick(
         pointToDelete
       );
     }
   };
-  // Обработчик для кнопки "Rollup" (свернуть/отменить редактирование существующей)
   #rollupButtonClickHandler = (evt) => {
     evt.preventDefault();
-    this.#handleCancelClick(); // Презентер должен решить, что делать (например, reset + replaceFormToCard)
+    this.#handleCancelClick();
   };
 
 _restoreHandlers() {
-  this.#initFlatpickr();
+    this.#initFlatpickr();
 
-  const formElement = this.element.querySelector("form");
-    formElement.addEventListener("submit", this.#saveButtonClickHandler); // Используем общий обработчик
- 
- 
+    const formElement = this.element.querySelector("form");
+    if (formElement) {
+      formElement.addEventListener("submit", this.#saveButtonClickHandler);
+    }
+
+    const priceInput = this.element.querySelector(".event__input--price");
+    if (priceInput) {
+      priceInput.addEventListener("input", this.#priceInputHandler);
+    }
+
+    const destinationInput = this.element.querySelector(".event__input--destination");
+    if (destinationInput) {
+      destinationInput.addEventListener("change", this.#destinationSelectHandler);
+    }
+
+    const eventTypeGroup = this.element.querySelector(".event__type-group");
+    if (eventTypeGroup) {
+      eventTypeGroup.addEventListener("change", this.#eventTypeChangeHandler);
+    }
+
     const rollupButton = this.element.querySelector(".event__rollup-btn");
     if (rollupButton) {
       rollupButton.addEventListener("click", this.#rollupButtonClickHandler);
     }
- 
+
     const resetButton = this.element.querySelector(".event__reset-btn");
     if (resetButton) {
       resetButton.addEventListener("click", this.#resetButtonClickHandler);
     }
- 
-    // this.element
-    //   .querySelector(".card__btn--edit")
-    //   .addEventListener("click", this.#editClickHandler);
-    this.element
-      .querySelector(".event__input--price")
-      .addEventListener("input", this.#priceInputHandler);
-    this.element
-      .querySelector(".event__input--destination")
-      .addEventListener("change", this.#destinationSelectHandler);  
-    this.element
-      .querySelector(".event__type-group")
-      .addEventListener("change", this.#eventTypeChangeHandler);
-}
+
+    // Добавляем обработчик изменений офферов
+    const offersContainer = this.element.querySelector(".event__available-offers");
+    if (offersContainer) {
+      offersContainer.addEventListener("change", this.#offerChangeHandler);
+    }
+  }
+
+  #offerChangeHandler = (evt) => {
+    if (evt.target.classList.contains("event__offer-checkbox")) {
+      const offerId = evt.target.dataset.offerId;
+      const allOffersForType = this.#offersModel.getOffersByType(this._state.type) || [];
+      const changedOffer = allOffersForType.find((o) => o.id === offerId);
+
+      if (!changedOffer) {
+        return;
+      }
+
+      const currentSelectedOffers = this._state.offers || [];
+      let newSelectedOffers;
+
+      if (evt.target.checked) {
+        // Добавить оффер, если его еще нет
+        if (!currentSelectedOffers.some((o) => o.id === changedOffer.id)) {
+          newSelectedOffers = [...currentSelectedOffers, changedOffer];
+        } else {
+          newSelectedOffers = currentSelectedOffers;
+        }
+      } else {
+        // Удалить оффер
+        newSelectedOffers = currentSelectedOffers.filter((o) => o.id !== changedOffer.id);
+      }
+
+      // Обновляем состояние с новыми офферами
+      this.updateElement({
+        offers: newSelectedOffers,
+        offersEditHtml: this.#createOffersTemplate(allOffersForType, newSelectedOffers)
+      });
+    }
+  };
 
   get template() {
     return createViewEditFormTemplate(this._state);
   }
 
   reset(point) {
-    this.updateElement(PointEditView.parsePointToState(point));
+    this.updateElement(this.#parsePointToState(point));
   }
 
     static parsePointToState(point) {
@@ -371,24 +408,24 @@ _restoreHandlers() {
   }
 
   static parseStateToPoint(state) {
-    const point = {...state};
-
-    return point;
+  const point = {...state};
+  delete point.destinationSelectHtml;
+  delete point.offersEditHtml;
+  delete point.allOffersForType;
+  
+  point.offers = point.offers.map((offer) => offer.id);
+  
+  if (point.destination) {
+    point.destination = point.destination.id;
   }
-
-  // #editClickHandler = (evt) => {
-  //   evt.preventDefault();
-  //   this.#handleEditClick();
-  // };
+  
+  return point;
+}
  
   #priceInputHandler = (evt) => {
-    // Получаем значение из input
     const value = evt.target.value;
- 
-    // Можно добавить проверку и парсинг в число, чтобы не было строк
     const price = Number(value);
  
-    // Обновляем состояние, если число валидное и не NaN
     if (!isNaN(price) && price >= 0) {
       this._setState({ basePrice: price });
     }
@@ -396,73 +433,88 @@ _restoreHandlers() {
 
   #destinationSelectHandler = (evt) => {
     const selectedCity = evt.target.value;
-    const destinations = getDestination();
+    const destinations = this.#destinationModel.destinations;
     const matchedDestination = destinations.find(
       (d) => d.name === selectedCity
     );
  
     if (matchedDestination) {
+      const destinationSelectHtml = createDestinationSelectTemplate(
+      matchedDestination.name,
+      this._state.type,
+      destinations
+    );
+
       this.updateElement({
         destination: matchedDestination,
+        destinationSelectHtml,
       });
     }
   };
 
+  
+
   #eventTypeChangeHandler = (evt) => {
     if (evt.target.name === "event-type") {
       const selectedType = evt.target.value;
- 
-      // Получаем все доступные оферы для нового типа
-      const allOffersForType =
-        this.#offersModel.getOffersByType(selectedType) || [];
- 
-      // Фильтруем уже выбранные оферы — оставляем только те, которые есть в новом типе
+      const allOffersForType = this.#offersModel.getOffersByType(selectedType) || [];
+      
+      // Сохраняем только те офферы, которые доступны для нового типа
       const newSelectedOffers = (this._state.offers || []).filter((offer) =>
         allOffersForType.some((available) => available.id === offer.id)
       );
- 
-      // Генерируем HTML с учётом выбранных
-      const offersEditHtml = this.#createOffersTemplate(
-        allOffersForType,
-        newSelectedOffers
+
+      const offersEditHtml = this.#createOffersTemplate(allOffersForType, newSelectedOffers);
+      const destinationName = this._state.destination?.name || "";
+      const allDestinations = this.#destinationModel.destinations;
+
+      const destinationSelectHtml = createDestinationSelectTemplate(
+        destinationName,
+        selectedType,
+        allDestinations
       );
- 
+
       this.updateElement({
         type: selectedType,
-        allOffersForType,
         offers: newSelectedOffers,
         offersEditHtml,
+        destinationSelectHtml,
       });
     }
   };
 
   #createOffersTemplate(allOffersForType, selectedOffers = []) {
     const selectedOfferIds = selectedOffers.map((offer) => offer.id);
- 
+
+    if (!allOffersForType || allOffersForType.length === 0) {
+      return "<p>No offers available for this type.</p>";
+    }
+
     return `
       <div class="event__available-offers">
         ${allOffersForType
-      .map((offer) => {
-        const isChecked = selectedOfferIds.includes(offer.id) ? "checked" : "";
-        const sanitizedTitle = offer.title.toLowerCase().replace(/\s+/g, "-");
-        const offerId = `event-offer-${sanitizedTitle}-1`;
- 
-        return `
+          .map((offer) => {
+            const isChecked = selectedOfferIds.includes(offer.id) ? "checked" : "";
+            const sanitizedTitle = offer.title.toLowerCase().replace(/\s+/g, "-");
+            const offerInputId = `event-offer-${sanitizedTitle}-${offer.id}`;
+
+            return `
               <div class="event__offer-selector">
                 <input class="event__offer-checkbox visually-hidden"
-                       id="${offerId}"
+                       id="${offerInputId}"
                        type="checkbox"
                        name="event-offer-${sanitizedTitle}"
+                       data-offer-id="${offer.id}"
                        ${isChecked}>
-                <label class="event__offer-label" for="${offerId}">
+                <label class="event__offer-label" for="${offerInputId}">
                   <span class="event__offer-title">${offer.title}</span>
                   &plus;&euro;&nbsp;
                   <span class="event__offer-price">${offer.price}</span>
                 </label>
               </div>
             `;
-      })
-      .join("")}
+          })
+          .join("")}
       </div>
     `;
   }

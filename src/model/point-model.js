@@ -1,47 +1,80 @@
-import { getRandomPoint } from "../mock/points.js";
-import OffersModel from "./offers-model.js";
-import DestinationModel from "./destination-model.js";
 import { EVENT_COUNT } from "../const.js";
 import Observable from '../framework/observable.js';
+import {UpdateType} from '../const.js';
  
 export default class PointModel extends Observable{
   #offersModel = null;
   #destinationModel = null;
-  #points = null;
+  #points = [];
+  #pointsApiService = null;
 
-  constructor() {
+  constructor({pointsApiService, destinationModel, offersModel}) {
     super()
-    this.#offersModel = new OffersModel();
-    this.#destinationModel = new DestinationModel();
-    this.#points = Array.from({ length: EVENT_COUNT }, () => this.#createPoint());
+    this.#pointsApiService = pointsApiService;
+
+    this.#destinationModel = destinationModel;
+    this.#offersModel = offersModel;
+  }
+
+    async init() {
+        try {
+          const points = await this.#pointsApiService.points;
+          this.#points = points.map(this.#adaptToClient);
+          this.#points = this.#points.map((point) => this.#createPoint(point))
+        } catch(err) {
+          this.#points = [];
+        }
+
+          this._notify(UpdateType.INIT);
+      }
+
+   #adaptToClient(point) {
+    const adaptedPoint = {
+      ...point,
+      basePrice: point["base_price"],
+      dateFrom:
+        point["date_from"] !== null
+          ? new Date(point["date_from"])
+          : point["date_from"],
+      dateTo:
+        point["date_to"] !== null
+          ? new Date(point["date_to"])
+          : point["date_to"],
+      isFavorite: point["is_favorite"],
+    };
+ 
+    delete adaptedPoint["base_price"];
+    delete adaptedPoint["date_from"];
+    delete adaptedPoint["date_to"];
+    delete adaptedPoint["is_favorite"];
+ 
+    return adaptedPoint;
   }
  
-  #createPoint() {
-    const tempPoint = getRandomPoint();
-    const destination = tempPoint != undefined 
-      ? this.#destinationModel.getDestinationById(tempPoint.destination)
+  #createPoint(rawPoint) {
+    const destination = rawPoint  != undefined 
+      ? this.#destinationModel.getDestinationById(rawPoint.destination)
       : [];
-    const allOffersForType = tempPoint != undefined 
-    ? this.#offersModel.getOffersByType(tempPoint.type)
-    : [];
-    const offers = tempPoint != undefined ? (allOffersForType ?? []).filter((offer) =>
-      tempPoint.offers.includes(offer.id)
+    const allOffersForType = this.#offersModel.getOffersByType(rawPoint.type);
+    const offers = rawPoint != undefined ? (allOffersForType ?? []).filter((offer) =>
+      rawPoint.offers.includes(offer.id)
     ) : [];
- 
-    // Генерация HTML для выбранных офферов
+
     const offersHtml = this.#createOffersHtml(offers);
     const offersEditHtml = this.#createOffersTemplate(allOffersForType, offers);
     const photosTemplate = this.#createPhotosTemplate(destination);
  
-    return {
-      ...tempPoint,
+    const rez = {
+      ...rawPoint,
       destination,
       allOffersForType,
       offers,
-      offersHtml, // добавляем HTML-шаблон в объект
+      offersHtml,
       offersEditHtml,
       photosTemplate,
     };
+
+    return rez;
   }
  
   #createOffersHtml(offers) {
@@ -65,7 +98,7 @@ export default class PointModel extends Observable{
   }
  
 #createOffersTemplate(allOffersForType, selectedOffers) {
-    const selectedOfferIds = selectedOffers.map((offer) => offer.id); // ← ВАЖНО
+    const selectedOfferIds = selectedOffers.map((offer) => offer.id);
  
     return `
     <div class="event__available-offers">
@@ -120,20 +153,26 @@ export default class PointModel extends Observable{
     return this.#points;
   }
 
-    updatePoint(updateType, update) {
+    async updatePoint(updateType, update) {
     const index = this.#points.findIndex((point) => point.id === update.id);
 
     if (index === -1) {
       throw new Error('Can\'t update unexisting point');
     }
 
-    this.#points = [
-      ...this.#points.slice(0, index),
-      update,
-      ...this.#points.slice(index + 1),
-    ];
-
-    this._notify(updateType, update);
+        try {
+      const response = await this.#pointsApiService.updatePoint(update);
+      let updatedPoint = this.#adaptToClient(response);
+      updatedPoint = this.#createPoint(updatedPoint);
+      this.#points = [
+        ...this.#points.slice(0, index),
+        updatedPoint,
+        ...this.#points.slice(index + 1),
+      ];
+      this._notify(updateType, updatedPoint);
+    } catch(err) {
+      throw new Error('Can\'t update point');
+    }
   }
 
   addPoint(updateType, update) {

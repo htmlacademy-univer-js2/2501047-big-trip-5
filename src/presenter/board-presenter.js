@@ -1,10 +1,11 @@
+import ViewEventList from '../view/view-event-list.js';
 import ViewSort from '../view/view-sort.js';
 import ViewAddForm from '../view/view-add-form.js';
 import LoadMoreButtonView from '../view/load-more-button-view.js';
 import NoPointView from '../view/no-point-view.js';
+import LoadingView from '../view/loading-view.js';
 
 import ViewBoard from '../view/view-board.js';
-import ViewEventList from '../view/view-event-list.js';
 
 import {render, RenderPosition, remove} from '../framework/render.js';
 import {EVENT_COUNT} from "../const.js";
@@ -31,14 +32,20 @@ export default class BoardPresenter {
   #buttonElement = "";
   #tripEvents = "";
   #filterModel = null;
+  #loadingComponent = new LoadingView();
+  #isLoading = true;
+  #offersModel = null;
+  #destinationModel = null;
 
-  constructor({boardContainer, pointModel, filterModel}) {
+  constructor({boardContainer, pointModel, filterModel, offersModel, destinationModel,}) {
     this.#boardContainer = boardContainer;
     this.#pointModel = pointModel;
     this.#filterModel = filterModel;
     this.#tripEvents = document.querySelector('.trip-events');
     this.#pointModel.addObserver(this.#handleModelEvent);
     this.#filterModel.addObserver(this.#handleModelEvent);
+    this.#offersModel = offersModel;
+    this.#destinationModel = destinationModel;
   }
 
   init() {
@@ -49,6 +56,8 @@ export default class BoardPresenter {
       pointListContainer: this.#eventListComponent.element,
       onDataChange: this.#handleViewAction,
       onModeChange: this.#handleModeChange,
+      offersModel: this.#offersModel,
+      destinationModel: this.#destinationModel,
       boardPresenterRef: this,
     });
     pointPresenter.init(point);
@@ -98,6 +107,11 @@ export default class BoardPresenter {
         this.#clearBoard({resetRenderedPointCount: true, resetSortType: true});
         this.#renderBoard();
         break;
+      case UpdateType.INIT:
+        this.#isLoading = false;
+        remove(this.#loadingComponent);
+        this.#renderBoard();
+        break;
     }
   };
 
@@ -124,19 +138,16 @@ export default class BoardPresenter {
     const pointCount = this.points.length;
 
     this.#pointPresenters.forEach((presenter) => presenter.destroy());
-    // this.#pointPresenters.clear();
-    this.#eventListComponent.element.innerHTML = ""; // если нужно явно очистить DOM
+    this.#eventListComponent.element.innerHTML = "";
 
     remove(this.#sortComponent);
     remove(this.#noPointComponent);
     remove(this.#loadMoreButtonComponent);
+    remove(this.#loadingComponent);
 
     if (resetRenderedPointCount) {
       this.#renderedPointCount = POINT_COUNT_PER_STEP;
     } else {
-      // На случай, если перерисовка доски вызвана
-      // уменьшением количества задач (например, удаление или перенос в архив)
-      // нужно скорректировать число показанных задач
       this.#renderedPointCount = Math.min(pointCount, this.#renderedPointCount);
     }
 
@@ -147,6 +158,10 @@ export default class BoardPresenter {
 
   #renderPoints(points) {
     points.forEach((point) => this.#renderPoint(point));
+  }
+
+  #renderLoading() {
+    render(this.#loadingComponent, this.#boardComponent.element, RenderPosition.AFTERBEGIN);
   }
 
   #renderNoPoints() {
@@ -164,7 +179,7 @@ export default class BoardPresenter {
   #clearPointList() {
     this.#pointPresenters.forEach((presenter) => presenter.destroy());
     this.#pointPresenters.clear();
-    this.#eventListComponent.element.innerHTML = ""; // если нужно явно очистить DOM
+    this.#eventListComponent.element.innerHTML = "";
     remove(this.#loadMoreButtonComponent);
   }
 
@@ -183,6 +198,11 @@ export default class BoardPresenter {
   #renderBoard() {
     render(this.#boardComponent, this.#boardContainer);
 
+    if (this.#isLoading) {
+      this.#renderLoading();
+      return;
+    }
+
     const points = this.points;
     const pointCount = points.length;
 
@@ -194,10 +214,6 @@ export default class BoardPresenter {
     this.#renderSort();
     render(this.#eventListComponent, this.#boardComponent.element);
 
-    // Теперь, когда #renderBoard рендерит доску не только на старте,
-    // но и по ходу работы приложения, нужно заменить
-    // константу TASK_COUNT_PER_STEP на свойство #renderedTaskCount,
-    // чтобы в случае перерисовки сохранить N-показанных карточек
     this.#renderPoints(points.slice(0, Math.min(pointCount, this.#renderedPointCount)));
 
     if (pointCount > this.#renderedPointCount) {

@@ -21,8 +21,12 @@ export default class PointPresenter {
   #point = null;
   #mode = Mode.DEFAULT;
   #boardPresenterRef = null;
+  #offersModel = null;
+  #destinationModel = null;
 
-  constructor({pointListContainer, onDataChange, onModeChange, boardPresenterRef}) {
+  constructor({pointListContainer, onDataChange, onModeChange, boardPresenterRef, offersModel, destinationModel,}) {
+    this.#offersModel = offersModel;
+    this.#destinationModel = destinationModel;
     this.#pointListContainer = pointListContainer;
     this.#handleDataChange = onDataChange;
     this.#handleModeChange = onModeChange;
@@ -43,6 +47,8 @@ export default class PointPresenter {
 
     this.#pointEditComponent = new PointEditView({
       point: this.#point,
+      offersModel: this.#offersModel,
+      destinationModel: this.#destinationModel,
         onDataChange: this.#handleFormUpdateSubmit,
         onCancelClick: this.#handleCancelEditClick,
         onDeleteClick: this.#handleDeleteClick,
@@ -68,7 +74,6 @@ export default class PointPresenter {
   #handleFormUpdateSubmit = (point) => {
  
     this.#handleDataChange(UserAction.UPDATE_POINT, UpdateType.MINOR, point);
-    // this.#replaceFormToCard();
     };
 
     #handleCancelEditClick = () => {
@@ -76,21 +81,17 @@ export default class PointPresenter {
       this.#point.id === BLANK_POINT_ID_PLACEHOLDER || this.#point.id === null;
  
     if (isNewPoint) {
-      // Если это новая точка и пользователь нажал "Cancel",
-      // нужно удалить этот презентер и его компонент формы.
-      // Сообщаем BoardPresenter, если ему нужно что-то сделать (например, убрать кнопку "New Event")
       if (
         this.#boardPresenterRef &&
         typeof this.#boardPresenterRef.handleCancelAddPoint === "function"
       ) {
         this.#boardPresenterRef.handleCancelAddPoint();
       }
-      this.destroy(); // Самоуничтожаемся
+      this.destroy();
       return;
     }
  
-    // Для существующей точки - сбросить изменения в форме и закрыть
-    this.#pointEditComponent.reset(this.#point); // Сбрасываем состояние формы
+    this.#pointEditComponent.reset(this.#point);
     this.#replaceFormToCard();
     };
     #handleDeleteClick = (point) => {

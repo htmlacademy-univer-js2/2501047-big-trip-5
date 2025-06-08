@@ -10,15 +10,19 @@ export default class ButtonPresenter {
   #buttonComponent = null;
   #formComponent = null;
   #pointModel = null;
+  #offersModel = null;
+  #destinationModel = null;
  
-  constructor({ buttonContainer, formContainer, pointModel,}) {
+  constructor({ buttonContainer, formContainer, pointModel, offersModel, destinationModel,}) {
     this.#buttonContainer = buttonContainer;
     this.#formContainer = formContainer;
     this.#pointModel = pointModel;
+    this.#offersModel = offersModel;
+    this.#destinationModel = destinationModel;
   }
  
   init() {
-    this.#buttonComponent = new ButtonView();
+      this.#buttonComponent = new ButtonView();
     render(this.#buttonComponent, this.#buttonContainer);
     this.#buttonComponent.element.addEventListener(
       "click",
@@ -31,6 +35,8 @@ export default class ButtonPresenter {
  
     this.#formComponent = new ViewAddForm({
       point: newPoint,
+      offersModel: this.#offersModel,
+      destinationModel: this.#destinationModel,
       onHandleFormSubmit: this.#handleFormSubmit,
       onHandleCancelClick: this.#handleCancelClick,
     });
@@ -44,7 +50,6 @@ export default class ButtonPresenter {
   };
  
   #handleFormSubmit = (evt) => {
-  // evt.preventDefault();
   const newPointData = this.#formComponent.getFormData();
   this.#pointModel.addPoint(UpdateType.MINOR, newPointData);
   this.#destroyForm();

@@ -55,8 +55,6 @@ export default class ViewSort extends AbstractView {
       return;
     }
  
-    //   evt.preventDefault();
- 
     const sortType = sortItem.dataset.sortType;
     if (sortType) {
 
