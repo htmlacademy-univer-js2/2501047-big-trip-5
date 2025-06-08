@@ -36,24 +36,24 @@ function formatDuration(dateFrom, dateTo) {
 
 function isPointFuture(point) {
   return (
-    point.dateFrom && dayjs(point.dateFrom).isAfter(dayjs(), "day") // &&  !point.isArchive
+    point.dateFrom && dayjs(point.dateFrom).isAfter(dayjs(), "day")
   );
 }
  
 function isPointPresent(point) {
   return (
-    point.dateFrom && dayjs(point.dateFrom).isSame(dayjs(), "day") // &&    !point.isArchive
+    point.dateFrom && dayjs(point.dateFrom).isSame(dayjs(), "day")
   );
 }
  
 function isPointPast(point) {
   return (
-    point.dateFrom && dayjs().isAfter(point.dateFrom, "day") //&& !point.isArchive
+    point.dateFrom && dayjs().isAfter(point.dateFrom, "day")
   );
 }
  
 function isPointEverything(point) {
-  return true; // Все задачи, без фильтрации
+  return true;
 }
 
 function getWeightForNullDate(dateA, dateB) {
@@ -62,21 +62,18 @@ function getWeightForNullDate(dateA, dateB) {
   if (dateB === null) return -1;
   return null;
 }
- 
-// Сортировка по дате (по убыванию)
+
 function sortDateDown(pointA, pointB) {
   const weight = getWeightForNullDate(pointA.dateFrom, pointB.dateFrom);
   return weight ?? dayjs(pointB.dateFrom).diff(dayjs(pointA.dateFrom));
 }
- 
-// Сортировка по времени (по убыванию длительности события)
+
 function sortByTimeDown(pointA, pointB) {
   const durationA = dayjs(pointA.dateTo).diff(dayjs(pointA.dateFrom));
   const durationB = dayjs(pointB.dateTo).diff(dayjs(pointB.dateFrom));
   return durationB - durationA;
 }
- 
-// Сортировка по цене (по убыванию)
+
 function sortByPriceDown(pointA, pointB) {
   return pointB.basePrice - pointA.basePrice;
 }

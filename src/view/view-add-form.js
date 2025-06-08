@@ -157,7 +157,8 @@ export default class ViewAddForm extends AbstractStatefulView{
   #handleFormSubmit = null;
   #handleEditClick = null;
   #handleCencelClick = null;
-  #offersModel = new OffersModel();
+  #offersModel = null;
+  #destinationModel = null;
   #datepicker = null;
   #flatpickrFrom;
   #flatpickrTo;
@@ -166,12 +167,14 @@ export default class ViewAddForm extends AbstractStatefulView{
     return createViewAddForm(this._state);
   }
 
-  constructor({ point = BLANK_POINT, onHandleFormSubmit, onHandleCancelClick }) {
+  constructor({ point = BLANK_POINT, onHandleFormSubmit, onHandleCancelClick, offersModel, destinationModel }) {
     super();
     this._setState(ViewAddForm.parsePointToState(point));
     this.#handleFormSubmit = onHandleFormSubmit;
     this.#handleCencelClick = onHandleCancelClick;
- 
+    this.#destinationModel = destinationModel;
+    this.#offersModel = offersModel;
+    
     this._restoreHandlers();
 
   }
@@ -184,10 +187,8 @@ export default class ViewAddForm extends AbstractStatefulView{
   };
 
   #dateFromChangeHandler = ([selectedDate]) => {
-      // Обновляем состояние даты начала
       this._setState({ dateFrom: selectedDate });
    
-      // Можно добавить логику для ограничения даты конца, если надо
       if (
         this.#flatpickrTo &&
         this._state.dateTo &&
@@ -199,10 +200,8 @@ export default class ViewAddForm extends AbstractStatefulView{
     };
   
     #dateToChangeHandler = ([selectedDate]) => {
-      // Обновляем состояние даты конца
       this._setState({ dateTo: selectedDate });
    
-      // Можно добавить логику ограничения даты начала, если надо
       if (
         this.#flatpickrFrom &&
         this._state.dateFrom &&
@@ -214,7 +213,6 @@ export default class ViewAddForm extends AbstractStatefulView{
     };
     
     #initFlatpickr() {
-      // Если уже были flatpickr — уничтожаем, чтобы избежать утечек
       if (this.#flatpickrFrom) {
         this.#flatpickrFrom.destroy();
         this.#flatpickrFrom = null;
@@ -224,7 +222,6 @@ export default class ViewAddForm extends AbstractStatefulView{
         this.#flatpickrTo = null;
       }
    
-      // Инициализация flatpickr для даты начала
       this.#flatpickrFrom = flatpickr(
         this.element.querySelector("#event-start-time-1"),
         {
@@ -235,7 +232,6 @@ export default class ViewAddForm extends AbstractStatefulView{
         }
       );
    
-      // Инициализация flatpickr для даты конца
       this.#flatpickrTo = flatpickr(
         this.element.querySelector("#event-end-time-1"),
         {
@@ -250,10 +246,6 @@ export default class ViewAddForm extends AbstractStatefulView{
   _restoreHandlers() {
     this.#initFlatpickr();
     document.addEventListener('keydown', this.#escKeyDownHandler);
-
-    // this.element
-    //   .querySelector(".event__save-btn")
-    //   .addEventListener("click", this.#handleFormSubmit);
  
     this.element
       .querySelector(".event__reset-btn")
@@ -266,10 +258,6 @@ export default class ViewAddForm extends AbstractStatefulView{
     this.element
       .querySelector('.event__rollup-btn')
       .addEventListener('click', this.#cancelClickHandler);
- 
-    // this.element
-    //   .querySelector(".card__btn--edit")
-    //   .addEventListener("click", this.#editClickHandler);
     this.element
       .querySelector(".event__input--price")
       .addEventListener("input", this.#priceInputHandler);
@@ -300,14 +288,12 @@ removeElement() {
 
   #setDatepicker() {
     if (this._state.isDueDate) {
-      // flatpickr есть смысл инициализировать только в случае,
-      // если поле выбора даты доступно для заполнения
       this.#datepicker = flatpickr(
         this.element.querySelector('.card__date'),
         {
           dateFormat: 'j F',
           defaultDate: this._state.dueDate,
-          onChange: this.#dueDateChangeHandler, // На событие flatpickr передаём наш колбэк
+          onChange: this.#dueDateChangeHandler,
         },
       );
     }
@@ -317,33 +303,26 @@ removeElement() {
     console.log(evt)
   evt.preventDefault();
   
-  // Валидация данных перед сохранением
   if (!this.#validateFormData()) {
     return;
   }
 
-  // Преобразуем состояние в формат точки и передаем наружу
   this.#handleFormSubmit(ViewAddForm.parseStateToPoint(this._state), UpdateType.MINOR);
 };
 
-// Метод для валидации данных формы
 #validateFormData() {
   const { type, destination, dateFrom, dateTo, basePrice } = this._state;
 
-  // Проверяем обязательные поля
   if (!type || !destination || !dateFrom || !dateTo || !basePrice) {
-    // Можно добавить визуальную индикацию ошибки
     alert('Please fill all required fields');
     return false;
   }
 
-  // Проверяем, что дата окончания не раньше даты начала
   if (new Date(dateTo) < new Date(dateFrom)) {
     alert('End date cannot be earlier than start date');
     return false;
   }
 
-  // Проверяем корректность цены
   if (isNaN(basePrice) || basePrice <= 0) {
     alert('Please enter a valid price');
     return false;
@@ -369,13 +348,10 @@ removeElement() {
   };
  
 #priceInputHandler = (evt) => {
-    // Получаем значение из input
     const value = evt.target.value;
  
-    // Можно добавить проверку и парсинг в число, чтобы не было строк
     const price = Number(value);
  
-    // Обновляем состояние, если число валидное и не NaN
     if (!isNaN(price) && price >= 0) {
       this._setState({ basePrice: price });
     }
@@ -385,16 +361,13 @@ removeElement() {
     if (evt.target.name === "event-type") {
       const selectedType = evt.target.value;
  
-      // Получаем все доступные оферы для нового типа
       const allOffersForType =
         this.#offersModel.getOffersByType(selectedType) || [];
  
-      // Фильтруем уже выбранные оферы — оставляем только те, которые есть в новом типе
       const newSelectedOffers = (this._state.offers || []).filter((offer) =>
         allOffersForType.some((available) => available.id === offer.id)
       );
  
-      // Генерируем HTML с учётом выбранных
       const offersEditHtml = this.#createOffersTemplate(
         allOffersForType,
         newSelectedOffers
@@ -473,6 +446,6 @@ removeElement() {
 
   #cancelClickHandler = (evt) => {
     evt.preventDefault();
-    this.#handleCencelClick(); // вызывает обработчик, переданный в конструктор
+    this.#handleCencelClick();
   };  
 }
